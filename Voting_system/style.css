@@ -1,0 +1,29 @@
+:root{--bg:#f5f6f8;--card:#fff;--ink:#1c2128;--muted:#5f6b7a;--line:#d9dee5;--accent:#1f4fd8;--ok:#176b3a;--err:#b3261e}
+@media(prefers-color-scheme:dark){:root{--bg:#13161a;--card:#1c2025;--ink:#e7eaee;--muted:#9aa5b1;--line:#30363e;--accent:#7aa2ff;--ok:#5fd18d;--err:#ff8a80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.top{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--card)}
+.top nav{display:flex;gap:16px;align-items:center}
+.brand{font-weight:700;color:var(--ink);text-decoration:none}
+a{color:var(--accent)}
+main{max-width:780px;margin:0 auto;padding:20px}
+h1{font-size:1.5rem;margin:.2em 0 .6em}h2{font-size:1.1rem;margin:0 0 .6em}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:18px;margin-bottom:16px}
+.narrow{max-width:420px;margin:40px auto}
+label{display:block;margin-bottom:12px;font-weight:600}
+input,select,textarea{display:block;width:100%;margin-top:4px;padding:9px;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px}
+.choice{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:6px;font-weight:500;cursor:pointer}
+.choice input{width:auto;margin:0}
+button{padding:9px 16px;font:inherit;color:#fff;background:var(--accent);border:0;border-radius:6px;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row input{width:auto;flex:1;min-width:140px;margin:0}
+.flash{padding:10px 14px;border-radius:6px;border:1px solid var(--line)}
+.flash.ok{color:var(--ok);border-color:var(--ok)}.flash.error{color:var(--err);border-color:var(--err)}
+.muted{color:var(--muted);font-size:.9rem}
+.receipt{font:700 1.3rem ui-monospace,Consolas,monospace;letter-spacing:.05em;word-break:break-all}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:.9rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.scroll{overflow-x:auto}
+meter{width:100%;height:14px}

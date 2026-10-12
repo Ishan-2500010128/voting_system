@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Online Voting System</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mu:#6a737d;--ac:#2457d6;--bd:#dde1e6;--ok:#1a7f45;--er:#c62828;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171b;--card:#1d2127;--tx:#e8eaed;--mu:#9aa3ad;--ac:#6b9bff;--bd:#323841;--ok:#4cc77f;--er:#ff7b72}}
+:root[data-theme="dark"]{--bg:#14171b;--card:#1d2127;--tx:#e8eaed;--mu:#9aa3ad;--ac:#6b9bff;--bd:#323841;--ok:#4cc77f;--er:#ff7b72}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
+h1{font-size:20px;margin:0}h2{font-size:16px;margin:0 0 8px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}
+input,select,textarea{width:100%;padding:9px;margin:4px 0 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font:inherit}
+button{background:var(--ac);color:#fff;border:0;border-radius:7px;padding:9px 14px;font:inherit;cursor:pointer;margin:2px 4px 2px 0}
+button.s{background:transparent;color:var(--ac);border:1px solid var(--ac)}
+.mu{color:var(--mu);font-size:13px}.ok{color:var(--ok)}.er{color:var(--er)}
+.opt{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--bd);border-radius:8px;margin-bottom:6px;cursor:pointer}
+.opt input{width:auto;margin:0}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;border:1px solid var(--bd);font-size:12px}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:6px;border-bottom:1px solid var(--bd);white-space:nowrap}
+.bar{height:10px;background:var(--ac);border-radius:5px}
+code{font-size:12px;word-break:break-all}
+</style></head><body><main id="app"></main>
+<script>
+const KEY='ovs_v1';let S,U=null,msg='',rcpt='';
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sha=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('');
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+async function log(ev){const p=S.audit.length?S.audit[S.audit.length-1].h:'0',t=new Date().toISOString();S.audit.push({t,ev,p,h:await sha(p+t+ev)});save()}
+async function init(){
+ try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+ if(!S){S={title:'Student Council 2026',cands:['Alice','Bob','Chitra'],status:'draft',published:false,voters:{},voted:{},ballots:[],audit:[],admin:await sha('admin:admin123')};
+  for(const id of['V001','V002','V003'])S.voters[id]=await sha(id+':vote123');
+  await log('System initialised')}
+ render()}
+const go=async(f)=>{try{await f()}catch(e){msg=e.message}render()};
+async function login(){const r=v('role'),id=v('uid').trim(),pw=v('pw');
+ const h=await sha(id+':'+pw);
+ if(r==='admin'&&h===S.admin){U={role:'admin',id};await log('Admin login')}
+ else if(r==='voter'&&S.voters[id]===h){U={role:'voter',id};await log('Voter login (id hash '+(await sha(id)).slice(0,8)+')')}
+ else{await log('Failed login attempt');throw Error('Invalid credentials')}msg=''}
+const v=id=>document.getElementById(id).value;
+function logout(){U=null;msg='';rcpt='';render()}
+async function cast(){const c=document.querySelector('input[name=c]:checked');if(!c)throw Error('Select an option');
+ if(S.status!=='open')throw Error('Election is not open');if(S.voted[U.id])throw Error('You have already voted');
+ const r=(await sha(crypto.getRandomValues(new Uint32Array(4)).join('-'))).slice(0,16);
+ S.ballots.push({r,c:+c.value});S.voted[U.id]=true;rcpt=r;await log('Ballot recorded, receipt '+r)}
+async function setup(){if(S.status!=='draft')throw Error('Cannot edit after opening');
+ const c=v('cands').split('\n').map(x=>x.trim()).filter(Boolean);if(c.length<2)throw Error('Need at least 2 options');
+ S.title=v('title').trim()||S.title;S.cands=c;await log('Election configured')}
+async function setStatus(s){if(s==='open'&&S.status!=='draft')throw Error('Already started');S.status=s;await log('Election '+s);}
+async function publish(){if(S.status!=='closed')throw Error('Close the election first');S.published=true;await log('Results published')}
+async function addVoter(){const id=v('nid').trim(),pw=v('npw');if(!id||pw.length<4)throw Error('ID and 4+ char password required');
+ if(S.voters[id])throw Error('Voter exists');S.voters[id]=await sha(id+':'+pw);await log('Voter registered');document.getElementById('nid').value=''}
+async function reset(){if(!confirm('Reset all data?'))return;localStorage.removeItem(KEY);U=null;await init()}
+async function verifyChain(){let p='0';for(const a of S.audit){if(a.p!==p||a.h!==await sha(a.p+a.t+a.ev)){msg='Audit log TAMPERED at '+a.t;return}p=a.h}msg='Audit chain verified: '+S.audit.length+' entries intact'}
+async function checkR(){const r=v('rc').trim();msg=S.ballots.some(b=>b.r===r)?'Receipt found: your vote is in the ballot box.':'Receipt not found.'}
+function results(){const n=S.cands.map(()=>0);S.ballots.forEach(b=>n[b.c]++);const t=S.ballots.length||1;
+ return S.cands.map((c,i)=>`<div>${esc(c)} — <b>${n[i]}</b> (${Math.round(n[i]/t*100)}%)<div class="bar" style="width:${n[i]/t*100}%"></div></div>`).join('')}
+function render(){
+ const a=document.getElementById('app');
+ let h=`<header><h1>🗳️ ${esc(S.title)}</h1>${U?`<span><span class="badge">${U.role}: ${esc(U.id)}</span> <button class="s" onclick="logout()">Logout</button></span>`:''}</header>`;
+ h+=`<div class="card mu">Status: <span class="badge">${S.status}</span></div>`;
+ if(msg)h+=`<div class="card ${/Invalid|Cannot|Need|already|not|required|exists|TAMP|Select|Close/.test(msg)&&!/verified|found:/.test(msg)?'er':'ok'}">${esc(msg)}</div>`;
+ if(!U){h+=`<div class="card"><h2>Sign in</h2><label>Role</label><select id="role"><option value="voter">Voter</option><option value="admin">Admin</option></select>
+ <label>ID</label><input id="uid" autocomplete="off"><label>Password</label><input id="pw" type="password">
+ <button onclick="go(login)">Login</button><p class="mu">Demo: voter V001 / vote123 · admin admin / admin123</p></div>
+ <div class="card"><h2>Verify my receipt</h2><input id="rc" placeholder="Receipt code"><button class="s" onclick="go(checkR)">Check</button></div>`}
+ else if(U.role==='voter'){
+  if(rcpt)h+=`<div class="card"><h2 class="ok">Vote submitted ✔</h2><p>Your receipt (save it): <code>${rcpt}</code></p></div>`;
+  if(S.voted[U.id]&&!rcpt)h+=`<div class="card">You have already voted. Thank you.</div>`;
+  else if(S.status==='open'&&!rcpt)h+=`<div class="card"><h2>Cast your vote</h2>${S.cands.map((c,i)=>`<label class="opt"><input type="radio" name="c" value="${i}">${esc(c)}</label>`).join('')}<button onclick="go(cast)">Submit vote</button></div>`;
+  else if(S.status!=='open'&&!rcpt)h+=`<div class="card">Voting is ${S.status==='draft'?'not open yet':'closed'}.</div>`;
+  if(S.published)h+=`<div class="card"><h2>Results</h2>${results()}</div>`}
+ else{
+  const nv=Object.keys(S.voters).length,nd=Object.keys(S.voted).length;
+  h+=`<div class="card"><h2>Live monitor</h2>Turnout: <b>${nd}/${nv}</b> voters (${nv?Math.round(nd/nv*100):0}%) · Ballots: ${S.ballots.length}<br><span class="mu">Tallies stay hidden until the election is closed.</span></div>
+  <div class="card"><h2>Election setup</h2><label>Title</label><input id="title" value="${esc(S.title)}"><label>Candidates / options (one per line)</label><textarea id="cands" rows="4">${esc(S.cands.join('\n'))}</textarea>
+  <button class="s" onclick="go(setup)">Save</button><button onclick="go(()=>setStatus('open'))">Open</button><button onclick="go(()=>setStatus('closed'))">Close</button><button onclick="go(publish)">Publish results</button><button class="s" onclick="go(reset)">Reset demo</button></div>`;
+  if(S.status==='closed')h+=`<div class="card"><h2>Results ${S.published?'(published)':'(admin only)'}</h2>${results()}</div>`;
+  h+=`<div class="card"><h2>Voters</h2><div style="display:flex;gap:8px"><input id="nid" placeholder="Voter ID"><input id="npw" type="password" placeholder="Password"></div><button onclick="go(addVoter)">Register voter</button>
+  <div class="tw"><table><tr><th>ID</th><th>Voted</th></tr>${Object.keys(S.voters).map(i=>`<tr><td>${esc(i)}</td><td>${S.voted[i]?'Yes':'No'}</td></tr>`).join('')}</table></div></div>
+  <div class="card"><h2>Audit trail</h2><button class="s" onclick="go(verifyChain)">Verify integrity</button><div class="tw"><table><tr><th>Time</th><th>Event</th><th>Hash</th></tr>${S.audit.slice().reverse().slice(0,25).map(x=>`<tr><td>${x.t.slice(11,19)}</td><td>${esc(x.ev)}</td><td><code>${x.h.slice(0,10)}…</code></td></tr>`).join('')}</table></div></div>`}
+ h+=`<p class="mu">Prototype: runs in your browser only. Passwords are SHA-256 hashed; ballots carry no voter identity; audit log is hash-chained. A real election needs a server, database and TLS.</p>`;
+ a.innerHTML=h}
+init();
+</script></body></html>
