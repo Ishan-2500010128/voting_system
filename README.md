@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Online Voting System
 
 React (Vite) front end + Node/Express + MongoDB back end.
@@ -54,3 +55,6 @@ Seeded logins (change in `.env` / `seed.js`):
 ## Before real-world use
 
 This is a solid project foundation, not a certified election system. For production you would add: rate limiting and account lockout on login, HTTPS, key management (KMS/HSM instead of an env var), MongoDB transactions on a replica set, threshold or split-key decryption so no single admin can decrypt, and an independent security review.
+=======
+# voting_system
+>>>>>>> c8cc668800a482d3bef1aa81f84fa7a2f7c6b1ba
